@@ -5,7 +5,6 @@ import type { UserMetrics, UserMetricsDraft, CalculatorResults } from '../types'
 import { ActivityLevel, Gender, Goal } from '../types';
 import { useLocalStorageState } from '../hooks/useLocalStorageState';
 import { calculateNutrition } from '../domain/nutrition';
-
 type FieldErrors = Partial<Record<keyof UserMetricsDraft, string>>;
 
 const DEFAULT_DRAFT: UserMetricsDraft = {
