@@ -11,6 +11,7 @@ import Exercises from './components/Exercises';
 import Footer from './components/Footer';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 
+
 export type TabType = 'home' | 'calculator' | 'plans' | 'progress' | 'diary' | 'food-db' | 'exercises';
 
 const App: React.FC = () => {
