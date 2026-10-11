@@ -53,14 +53,38 @@ function parseMetrics(draft: UserMetricsDraft): UserMetrics | null {
   const errors = validate(draft);
   if (Object.keys(errors).length > 0) return null;
 
+  const age = Number(draft.age);
+  const weight = Number(draft.weight);
+  const height = Number(draft.height);
+
+  if (!Number.isFinite(age) || !Number.isFinite(weight) || !Number.isFinite(height)) {
+    return null;
+  }
+
   return {
     name: (draft.name ?? '').trim(),
-    age: Number(draft.age),
-    weight: Number(draft.weight),
-    height: Number(draft.height),
+    age,
+    weight,
+    height,
     gender: draft.gender ?? Gender.MALE,
     activityLevel: draft.activityLevel ?? ActivityLevel.SEDENTARY,
     goal: draft.goal ?? Goal.MAINTAIN,
+  };
+}
+
+// دالة لتنظيف وتأمين نتائج الحسابات ضد أي قيمة NaN
+function sanitizeResults(results: CalculatorResults): CalculatorResults {
+  const safeNumber = (val: any) => (Number.isFinite(Number(val)) ? Math.round(Number(val)) : 0);
+
+  return {
+    bmr: safeNumber(results.bmr),
+    tdee: safeNumber(results.tdee),
+    targetCalories: safeNumber(results.targetCalories),
+    macros: {
+      protein: safeNumber(results?.macros?.protein),
+      carbs: safeNumber(results?.macros?.carbs),
+      fats: safeNumber(results?.macros?.fats),
+    },
   };
 }
 
@@ -72,6 +96,8 @@ const Calculator: React.FC = () => {
   const errors = useMemo(() => validate(draft), [draft]);
   const canCalculate = useMemo(() => Object.keys(errors).length === 0, [errors]);
 
+  const safeResults = useMemo(() => (results ? sanitizeResults(results) : null), [results]);
+
   const calculate = async () => {
     const metrics = parseMetrics(draft);
     if (!metrics) return;
@@ -79,7 +105,10 @@ const Calculator: React.FC = () => {
     setLoading(true);
     try {
       const computed = calculateNutrition(metrics as any);
-      setResults(computed);
+      const cleaned = sanitizeResults(computed);
+      setResults(cleaned);
+    } catch (err) {
+      console.error('Error calculating nutrition:', err);
     } finally {
       setLoading(false);
     }
@@ -91,7 +120,7 @@ const Calculator: React.FC = () => {
   };
 
   const generatePDF = () => {
-    if (!results) return;
+    if (!safeResults) return;
 
     const doc = new jsPDF();
 
@@ -125,13 +154,13 @@ const Calculator: React.FC = () => {
     doc.text('Results', 20, 125);
     doc.setFontSize(12);
 
-    line(140, 'BMR', `${results.bmr} kcal`);
-    line(150, 'TDEE', `${results.tdee} kcal`);
-    line(160, 'Target Calories', `${results.targetCalories} kcal/day`);
+    line(140, 'BMR', `${safeResults.bmr} kcal`);
+    line(150, 'TDEE', `${safeResults.tdee} kcal`);
+    line(160, 'Target Calories', `${safeResults.targetCalories} kcal/day`);
 
-    line(175, 'Protein', `${results.macros.protein} g/day`);
-    line(185, 'Carbs', `${results.macros.carbs} g/day`);
-    line(195, 'Fats', `${results.macros.fats} g/day`);
+    line(175, 'Protein', `${safeResults.macros.protein} g/day`);
+    line(185, 'Carbs', `${safeResults.macros.carbs} g/day`);
+    line(195, 'Fats', `${safeResults.macros.fats} g/day`);
 
     doc.setTextColor(120);
     doc.setFontSize(10);
@@ -298,7 +327,7 @@ const Calculator: React.FC = () => {
 
           {/* Results */}
           <div className="space-y-6">
-            {!results ? (
+            {!safeResults ? (
               <div className="bg-emerald-50 border-2 border-dashed border-emerald-200 p-12 rounded-3xl flex flex-col items-center justify-center text-center">
                 <div className="bg-white p-4 rounded-full mb-4 shadow-sm text-emerald-600">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -320,15 +349,15 @@ const Calculator: React.FC = () => {
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4 mb-8">
-                  <KpiCard label="السعرات المستهدفة" value={results.targetCalories} suffix="سعرة / يوم" />
-                  <KpiCard label="معدل الأيض (BMR)" value={results.bmr} suffix="سعرة بدون حركة" />
+                  <KpiCard label="السعرات المستهدفة" value={safeResults.targetCalories} suffix="سعرة / يوم" />
+                  <KpiCard label="معدل الأيض (BMR)" value={safeResults.bmr} suffix="سعرة بدون حركة" />
                 </div>
 
                 <div className="space-y-4">
                   <p className="font-bold text-gray-800 text-sm">توزيع المغذيات الكبرى (الماكروز):</p>
-                  <MacroRow label="البروتين" amount={results.macros.protein} color="bg-orange-500" icon="🍗" max={maxMacro(results)} />
-                  <MacroRow label="الكربوهيدرات" amount={results.macros.carbs} color="bg-blue-500" icon="🍚" max={maxMacro(results)} />
-                  <MacroRow label="الدهون" amount={results.macros.fats} color="bg-yellow-500" icon="🥑" max={maxMacro(results)} />
+                  <MacroRow label="البروتين" amount={safeResults.macros.protein} color="bg-orange-500" icon="🍗" max={maxMacro(safeResults)} />
+                  <MacroRow label="الكربوهيدرات" amount={safeResults.macros.carbs} color="bg-blue-500" icon="🍚" max={maxMacro(safeResults)} />
+                  <MacroRow label="الدهون" amount={safeResults.macros.fats} color="bg-yellow-500" icon="🥑" max={maxMacro(safeResults)} />
                 </div>
 
                 <div className="mt-8 p-4 bg-emerald-50 rounded-2xl text-emerald-800 text-sm">
