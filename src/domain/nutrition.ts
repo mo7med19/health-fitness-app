@@ -1,3 +1,4 @@
+// src/domain/nutrition.ts
 import type { Gender, Goal, ActivityLevel, CalculatorResults, UserMetrics } from '../types';
 
 export type MacroDistribution = { carbs: number; protein: number; fats: number };
@@ -22,12 +23,11 @@ export function getActivityMultiplier(activityLevel: ActivityLevel | string): nu
     return 1.725;
   }
 
-  // محاولة تحويل النص إلى رقم في حال تم تمرير قيمة رقمية كمفتاح
   const parsed = parseFloat(level);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.2;
 }
 
-// Mifflin–St Jeor BMR equation (سعرات الأيض الأساسي)
+// معادلة Mifflin–St Jeor BMR (الأدق عالمياً لحساب الأيض الأساسي)
 export function mifflinStJeorBMR(age: number, heightCm: number, weightKg: number, gender: Gender | string): number {
   const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
   const isMale = String(gender).toLowerCase() === 'male' || String(gender) === 'ذكر';
@@ -56,15 +56,16 @@ export function getGoalAdjustment(goal: Goal | string): number {
   return 0;
 }
 
+// توزيع الماكروز الاحترافي بناءً على الهدف البدني
 export function macroDistribution(goal: Goal | string): MacroDistribution {
   const goalStr = String(goal).toLowerCase();
   if (goalStr.includes('lose') || goalStr.includes('خسارة')) {
-    return { carbs: 0.30, protein: 0.40, fats: 0.30 };
+    return { carbs: 0.30, protein: 0.40, fats: 0.30 }; // بروتين مرتفع للحفاظ على العضلات أثناء العجز
   }
   if (goalStr.includes('gain') || goalStr.includes('زيادة')) {
-    return { carbs: 0.50, protein: 0.30, fats: 0.20 };
+    return { carbs: 0.50, protein: 0.30, fats: 0.20 }; // كارب مرتفع لدعم بناء الكتلة العضلية والطاقة
   }
-  return { carbs: 0.40, protein: 0.30, fats: 0.30 };
+  return { carbs: 0.40, protein: 0.30, fats: 0.30 }; // توزيع متوازن للمحافظة على الوزن
 }
 
 export function calculateNutrition(metrics: UserMetrics): CalculatorResults {
@@ -76,6 +77,7 @@ export function calculateNutrition(metrics: UserMetrics): CalculatorResults {
   const tdee = tdeeFromBMR(bmr, metrics.activityLevel);
 
   const goalAdjustment = getGoalAdjustment(metrics.goal);
+  // حماية إضافية لضمان عدم نزول السعرات عن حد الأمان الصحي (1200 سعرة)
   const targetCalories = Math.max(1200, tdee + goalAdjustment);
 
   const macros = macroDistribution(metrics.goal);
