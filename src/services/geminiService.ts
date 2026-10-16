@@ -29,20 +29,18 @@ export interface FullMealSwapResponse {
 }
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 function cleanJsonResponse(text: string): string {
   if (!text) return '{}';
   let cleaned = text.trim();
-  // إزالة وسوم الكود إن وجدت
   cleaned = cleaned
     .replace(/^```json\s*/i, '')
     .replace(/^```\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim();
   
-  // استخراج أول قوس بداية وأخر قوس نهاية لضمان الحصول على كائن JSON نقي
   const firstOpen = cleaned.indexOf('{');
   const lastClose = cleaned.lastIndexOf('}');
   if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
@@ -54,7 +52,7 @@ function cleanJsonResponse(text: string): string {
 
 async function callGeminiJson<T>(prompt: string): Promise<T> {
   if (!API_KEY) {
-    throw new Error('مفتاح VITE_GEMINI_API_KEY غير موجود في ملف .env[cite: 1]');
+    throw new Error('مفتاح VITE_GEMINI_API_KEY غير موجود في ملف .env أو إعدادات البيئة');
   }
 
   const url = `${ENDPOINT}/${MODEL}:generateContent?key=${API_KEY}`;
@@ -73,18 +71,18 @@ async function callGeminiJson<T>(prompt: string): Promise<T> {
   try {
     data = raw ? JSON.parse(raw) : null;
   } catch {
-    // سيتم معالجته عبر التحقق أدناه
+    // خطأ تحليل الـ JSON يتم التعامل معه في الأسفل
   }
 
   if (!response.ok || data?.error) {
     const msg = data?.error?.message || raw.slice(0, 200) || response.statusText;
-    throw new Error(`Gemini ${response.status}: ${msg}`);
+    throw new Error(`خطأ من الخادم (${response.status}): ${msg}`);
   }
 
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
     console.error('Unexpected Gemini response:', data);
-    throw new Error('لم يتم استلام بيانات صحيحة من الخادم[cite: 1].');
+    throw new Error('لم يتم استلام بيانات صحيحة من الخادم.');
   }
 
   const cleanedText = cleanJsonResponse(text);
@@ -97,7 +95,7 @@ async function callGeminiJson<T>(prompt: string): Promise<T> {
 }
 
 /**
- * طلب اقتراح وجبة/مكوّن بديل بذات القيم الغذائية مع مراعاة الحساسية والاستبعاد
+ * طلب اقتراح وجبة/مكوّن بديل بذات القيم الغذائية
  */
 export async function suggestMealAlternative(
   mealName: string,
@@ -136,7 +134,7 @@ export async function suggestMealAlternative(
     return await callGeminiJson<MealAlternativeResponse>(prompt);
   } catch (error) {
     console.error('Error generating meal alternative:', error);
-    throw new Error('تعذر جلب البديل الغذائي حالياً، يرجى المحاولة لاحقاً[cite: 1].');
+    throw new Error('تعذر جلب البديل الغذائي حالياً، يرجى المحاولة لاحقاً.');
   }
 }
 
@@ -172,12 +170,12 @@ export async function swapFullMeal(
     return await callGeminiJson<FullMealSwapResponse>(prompt);
   } catch (error) {
     console.error('Error swapping full meal:', error);
-    throw new Error('تعذر استبدال الوجبة حالياً، يرجى المحاولة لاحقاً[cite: 1].');
+    throw new Error('تعذر استبدال الوجبة حالياً، يرجى المحاولة لاحقاً.');
   }
 }
 
 /**
- * توليد خطة يومية كاملة بناءً على بيانات المستخدم وخياراته (بما في ذلك عدد الوجبات ديناميكياً)
+ * توليد خطة يومية كاملة بناءً على بيانات المستخدم وخياراته
  */
 export async function generateAIDailyPlan(
   metrics: UserMetrics,
@@ -195,11 +193,11 @@ export async function generateAIDailyPlan(
     قم بإنشاء خطة وجبات يومية صحية للمستخدم.
     الاسم: ${metrics.name || 'مستخدم'}، العمر: ${metrics.age}، الوزن: ${metrics.weight}kg، الطول: ${metrics.height}cm.
     الهدف: ${metrics.goal}، السعرات المستهدفة: ${targetCalories || 2000}.
-    عدد الوجبات المطلوب بالضبط: ${mealsCount} وجبات[cite: 1].
+    عدد الوجبات المطلوب بالضبط: ${mealsCount} وجبات.
     ${fastingInstruction}
-    الأطعمة المستبعدة والحساسية: ${JSON.stringify(options || {})}[cite: 1]
+    الأطعمة المستبعدة والحساسية: ${JSON.stringify(options || {})}
 
-    أجب بصيغة JSON حصراً بدون أي نصوص خارجية، بحيث يحتوي الكائن على مفاتيح للوجبات (مثل meal1, meal2, meal3, meal4) بعدد ${mealsCount} وجبات، بالشكل التالي تماماً[cite: 1]:
+    أجب بصيغة JSON حصراً بدون أي نصوص خارجية، بحيث يحتوي الكائن على مفاتيح للوجبات (مثل meal1, meal2, meal3, meal4) بعدد ${mealsCount} وجبات، بالشكل التالي تماماً:
     {
       "meal1": {
         "name": "وجبة الفطور",
