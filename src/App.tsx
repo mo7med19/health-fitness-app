@@ -11,7 +11,6 @@ import Exercises from './components/Exercises';
 import Footer from './components/Footer';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 
-
 export type TabType = 'home' | 'calculator' | 'plans' | 'progress' | 'diary' | 'food-db' | 'exercises';
 
 const App: React.FC = () => {
@@ -23,7 +22,12 @@ const App: React.FC = () => {
         <Navbar currentPage={activeTab} onNavigate={(page: TabType) => setActiveTab(page)} />
         <main>
           {activeTab === 'home' && <Home onNavigate={(page: TabType) => setActiveTab(page)} />}
-          {activeTab === 'calculator' && <Calculator />}
+          
+          {/* هنا تم إضافة تمرير دالة onNavigate لصفحة الحاسبة */}
+          {activeTab === 'calculator' && (
+            <Calculator onNavigate={(page: TabType) => setActiveTab(page)} />
+          )}
+
           {activeTab === 'plans' && <Plans />}
           {activeTab === 'progress' && <Progress />}
           {activeTab === 'diary' && <Diary />}

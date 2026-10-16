@@ -59,18 +59,15 @@ export const CalculatorResultsView: React.FC<CalculatorResultsViewProps> = ({
 
       {/* زر الانتقال المباشر لصفحة الخطط الغذائية */}
       <button
-        onClick={() => {
-          if (onNavigateToPlans) {
-            onNavigateToPlans();
-          } else {
-            // طريقة افتراضية للتنقل في حال عدم وجود راوتر معرف مسبقاً
-            window.location.hash = '#plans';
-          }
-        }}
-        className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-colors mt-6 shadow-md shadow-emerald-200 cursor-pointer flex items-center justify-center gap-2"
-      >
-        <span>✨</span> الانتقال لتوليد خطة الوجبات بناءً على نتائجك
-      </button>
+  onClick={() => {
+    if (onNavigateToPlans) {
+      onNavigateToPlans();
+    }
+  }}
+  className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-colors mt-6 shadow-md shadow-emerald-200 cursor-pointer flex items-center justify-center gap-2"
+>
+  <span>✨</span> الانتقال لتوليد خطة الوجبات بناءً على نتائجك
+</button>
 
       <button
         onClick={onGeneratePdf}

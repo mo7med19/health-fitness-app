@@ -13,7 +13,11 @@ import {
 import { CalculatorForm } from './calculator/CalculatorForm';
 import { CalculatorResultsView } from './calculator/CalculatorResultsView';
 
-const Calculator: React.FC = () => {
+interface CalculatorProps {
+  onNavigate?: (page: any) => void;
+}
+
+const Calculator: React.FC<CalculatorProps> = ({ onNavigate }) => {
   const [draft, setDraft] = useLocalStorageState('userMetricsDraft', DEFAULT_DRAFT);
   const [results, setResults] = useLocalStorageState<CalculatorResults | null>('calculatorResults', null);
   const [loading, setLoading] = useState(false);
@@ -70,6 +74,11 @@ const Calculator: React.FC = () => {
           <CalculatorResultsView
             safeResults={safeResults}
             onGeneratePdf={handleGeneratePDF}
+            onNavigateToPlans={() => {
+              if (onNavigate) {
+                onNavigate('plans');
+              }
+            }}
           />
         </div>
       </div>
